@@ -8,7 +8,7 @@ import java.io.FileNotFoundException;
 public class App {
     public static void main(String[] args) {
         try {
-            new Day2().adventOfCodeDay2Part2();
+            new Day3().adventOfCodeDay3Part1();
         } catch (FileNotFoundException e) {
             e.printStackTrace();
         }
