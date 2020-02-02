@@ -3,10 +3,8 @@ package sowicki;
 import java.awt.*;
 import java.io.File;
 import java.io.FileNotFoundException;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
-import java.util.Scanner;
+import java.util.*;
 
 public class Day3 {
     private List<String> pathOne = new ArrayList<String>();
@@ -16,40 +14,112 @@ public class Day3 {
         // call private method to load custom input
         loadInput();
         List<Point> crossedByFirstPath = calculatePathPoints(pathOne);
+        List<Point> crossedBySecondPath = calculatePathPoints(pathTwo);
 
         // Get intersection of 2 sets of Points
-//        List<String> commonPoints = new ArrayList<>(pathOne);
-//        commonPoints.retainAll(pathTwo);
+        List<Point> commonPoints = new ArrayList<>(crossedByFirstPath);
+        // find common points
+        commonPoints.retainAll(crossedBySecondPath);
+        // remove all origin point occurences
+        commonPoints.removeIf(point -> point.x == 0 && point.y == 0);
+
+        System.out.println("Result is: " + shortestManhattanDistanceToOrigin(commonPoints));
 
     }
 
     private List<Point> calculatePathPoints(List<String> path) {
-        List<Point> pointsCrossed = new ArrayList<Point>();
-        pointsCrossed.set(0, new Point(0, 0));
+        List<Point> pathPointsCrossed = new ArrayList<Point>();
+        pathPointsCrossed.add(0, new Point(0, 0));
 
         // calculate further crossed points starting from Origin point
-        for (int i = 0; i < pointsCrossed.size(); i++) {
-            Point p = nextPointCrossed(path.get(i), pointsCrossed.get(i));
-            pointsCrossed.add(p);
+        for (int i = 0; i < path.size(); i++) {
+            Point recentPointCrossed = pathPointsCrossed.get(pathPointsCrossed.size() - 1);
+            List<Point> points = pointsCrossedDuringInstruction(path.get(i), recentPointCrossed);
+            pathPointsCrossed.addAll(points);
         }
 
-        return pointsCrossed;
+        return pathPointsCrossed;
     }
 
     /**
      * Calculates next point crossed by path. Requires previous point and current instruction.
      *
      * @param instruction   from puzzle input
-     * @param previousPoint
+     * @param startingPoint
      * @return Point crossed.
      */
-    private Point nextPointCrossed(String instruction, Point previousPoint) {
-        char direction;
-        int distance;
-        direction = instruction.charAt(0);
-        distance = Integer.parseInt(instruction.substring(1));
-        return new Point(0, 0);
-        // TODO implement reset of this method
+    private List<Point> pointsCrossedDuringInstruction(String instruction, Point startingPoint) {
+        List<Point> result = new ArrayList<>();
+        String direction = instruction.substring(0, 1);
+        int distance = Integer.parseInt(instruction.substring(1));
+        int finishX, finishY;
+
+        switch (direction) {
+            case "R":
+                finishX = startingPoint.x + distance;
+                finishY = startingPoint.y;
+                result.addAll(allPointsBetween(startingPoint, new Point(finishX, finishY)));
+                break;
+            case "L":
+                finishX = startingPoint.x - distance;
+                finishY = startingPoint.y;
+                result.addAll(allPointsBetween(startingPoint, new Point(finishX, finishY)));
+                break;
+            case "U":
+                finishX = startingPoint.x;
+                finishY = startingPoint.y + distance;
+                result.addAll(allPointsBetween(startingPoint, new Point(finishX, finishY)));
+                break;
+            case "D":
+                finishX = startingPoint.x;
+                finishY = startingPoint.y - distance;
+                result.addAll(allPointsBetween(startingPoint, new Point(finishX, finishY)));
+                break;
+        }
+
+        return result;
+    }
+
+    /**
+     * Retuns list of all points between point A and point B
+     *
+     * @param pointA
+     * @param pointB
+     * @return
+     */
+    private List<Point> allPointsBetween(Point pointA, Point pointB) {
+        List<Point> result = new ArrayList<>();
+
+        if (pointA.x > pointB.x) {
+            for (int i = 0; i <= Math.abs(pointA.x - pointB.x); i++) {
+                result.add(new Point(pointA.x - i, pointA.y));
+            }
+        }
+
+        if (pointA.x < pointB.x) {
+            for (int i = 0; i <= Math.abs(pointA.x - pointB.x); i++) {
+                result.add(new Point(pointA.x + i, pointA.y));
+            }
+        }
+
+        // y maths
+        if (pointA.y > pointB.y) {
+            for (int i = 0; i <= Math.abs(pointA.y - pointB.y); i++) {
+                result.add(new Point(pointA.x, pointA.y - i));
+            }
+        }
+
+        if (pointA.y < pointB.y) {
+            for (int i = 0; i <= Math.abs(pointA.y - pointB.y); i++) {
+                result.add(new Point(pointA.x, pointA.y + i));
+            }
+        }
+
+        if (pointA.x == pointB.x && pointA.y == pointB.y) {
+            System.out.println("CHEATING, 2 points are the same!!");
+        }
+
+        return result;
     }
 
     /**
@@ -57,9 +127,16 @@ public class Day3 {
      *
      * @return Point which is closest to (0, 0) using manhattan distance.
      */
-    private Point calculateManhattanClosestToOrigin(List<String> pointsList) {
-        // TODO: IMPLEMENT this shit
-        return new Point(0, 0);
+    private int shortestManhattanDistanceToOrigin(List<Point> pointsList) {
+        OptionalInt shortestDistance = pointsList
+                .stream()
+                .mapToInt(this::manhattanDistance)
+                .min();
+        return shortestDistance.getAsInt();
+    }
+
+    public int manhattanDistance(Point p) {
+        return Math.abs(p.x) + Math.abs(p.y);
     }
 
     private void loadInput() throws FileNotFoundException {
@@ -67,9 +144,9 @@ public class Day3 {
 
         Scanner scanner = new Scanner(file);
         String s = scanner.nextLine();
-        pathOne = Arrays.asList(new String[]{"R8", "U5", "L5", "D3"});
-//        pathOne = Arrays.asList(s.split(","));
+        pathOne = Arrays.asList(s.split(","));
         s = scanner.nextLine();
         pathTwo = Arrays.asList(s.split(","));
     }
+
 }
